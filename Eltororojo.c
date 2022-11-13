@@ -1,39 +1,39 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_vulkan.h>
 #include <stdio.h>
 
-uint32_t flags = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+uint_least16_t width = 640;
+uint_least16_t height = 480;
 
-uint16_t width = 640;
-uint16_t height = 480;
+uint_least32_t flags = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
 
-void HandleSDL_Error(char *argv[], const char *msg);
+void HandleSDL_Error(const char *msg);
 
 int main(int argc, char *argv[])
 {
 	// Initialize SDL
-	if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
-	{
-		HandleSDL_Error(argv, "SDL could not initialize!");
-	}
+	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) HandleSDL_Error("Unable to initialize SDL");
 
 	// Create a window
 	SDL_Window *window = SDL_CreateWindow("Test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, flags);
-	if (!window)
-	{
-		HandleSDL_Error(argv, "Window could not be created!");
-	}
+	if (window == NULL) HandleSDL_Error("Window could not be created");
 
 	// Get its ID
-	uint32_t windowID = SDL_GetWindowID(window);
+	uint_least32_t windowID = SDL_GetWindowID(window);
+
+	// WIP
+	unsigned int count;
+	if (!SDL_Vulkan_GetInstanceExtensions(window, &count, NULL)) HandleSDL_Error("Unable to get Vulkan instance extensions");
+
+	// Create Vulkan instance
+	VkInstance instance;
+	vkCreateInstance(NULL, NULL, &instance);
 
 	// Get window surface
-	SDL_Surface *screenSurface = SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0);
-	if (!screenSurface)
-	{
-		HandleSDL_Error(argv, "Surface could not be created!");
-	}
+	SDL_Surface *screenSurface;
+	if (!SDL_Vulkan_CreateSurface(window, instance, &screenSurface)) HandleSDL_Error("Unable to create screen surface");
 
-	// Fill the surface with gray
+	// Fill the surface with gray color
 	SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 15, 15, 15));
 
 	// Update the surface
@@ -69,10 +69,11 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
+	return -1;
 }
 
-void HandleSDL_Error(char *argv[], const char *msg)
+void HandleSDL_Error(const char *msg)
 {
-		fprintf(stderr, "%s: %s %s\n", argv[0], msg, SDL_GetError());
-		exit(-1);
+	SDL_Log("%s: %s", msg, SDL_GetError());
+	exit(-2);
 }
