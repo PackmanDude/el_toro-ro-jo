@@ -1,6 +1,6 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
-#include <stdio.h>
+#include <vulkan/vulkan.h>
 
 uint_least16_t width = 640;
 uint_least16_t height = 480;
@@ -12,29 +12,39 @@ void HandleSDL_Error(const char *msg);
 int main(int argc, char *argv[])
 {
 	// Initialize SDL
-	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) HandleSDL_Error("Unable to initialize SDL");
+	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) HandleSDL_Error("SDL_Init failed");
 
 	// Create a window
 	SDL_Window *window = SDL_CreateWindow("Test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, flags);
-	if (window == NULL) HandleSDL_Error("Window could not be created");
+	if (!window) HandleSDL_Error("SDL_CreateWindow failed");
 
 	// Get its ID
 	uint_least32_t windowID = SDL_GetWindowID(window);
 
-	// WIP
-	unsigned int count;
-	if (!SDL_Vulkan_GetInstanceExtensions(window, &count, NULL)) HandleSDL_Error("Unable to get Vulkan instance extensions");
+	VkInstanceCreateInfo instance_info = { 0 };
 
-	// Create Vulkan instance
-	VkInstance instance;
-	vkCreateInstance(NULL, NULL, &instance);
+	unsigned int count = 0;
+	SDL_Vulkan_GetInstanceExtensions(window, &count, NULL);
+	const char **extensions = malloc(sizeof(char*) * count);
+	SDL_Vulkan_GetInstanceExtensions(window, &count, extensions);
 
-	// Get window surface
-	SDL_Surface *screenSurface;
-	if (!SDL_Vulkan_CreateSurface(window, instance, &screenSurface)) HandleSDL_Error("Unable to create screen surface");
+	instance_info.enabledExtensionCount = count;
+	instance_info.ppEnabledExtensionNames = extensions;
 
-	// Fill the surface with gray color
-	SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 15, 15, 15));
+	VkInstance instance = VK_NULL_HANDLE;
+	if (vkCreateInstance(&instance_info, NULL, &instance) != VK_SUCCESS)
+	{
+		HandleSDL_Error("vkCreateInstance failed");
+	}
+
+	VkSurfaceKHR screen_surface = VK_NULL_HANDLE;
+	if (!SDL_Vulkan_CreateSurface(window, instance, &screen_surface))
+	{
+		HandleSDL_Error("SDL_Vulkan_CreateSurface failed");
+	}
+
+	// Fill the surface with gray color		DOES NOT WORK
+//	SDL_FillRect(screen_surface, NULL, SDL_MapRGB(screen_surface->format, 15, 15, 15));
 
 	// Update the surface
 	SDL_UpdateWindowSurface(window);
@@ -69,11 +79,10 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
-	return -1;
 }
 
 void HandleSDL_Error(const char *msg)
 {
-	SDL_Log("%s: %s", msg, SDL_GetError());
+	SDL_Log("%s: %s\n", msg, SDL_GetError());
 	exit(-2);
 }
