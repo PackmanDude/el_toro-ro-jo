@@ -5,17 +5,24 @@
 uint_least16_t width = 640;
 uint_least16_t height = 480;
 
-uint_least32_t flags = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
-
 void HandleSDL_Error(const char *msg);
 
 int main(int argc, char *argv[])
 {
 	// Initialize SDL
-	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) HandleSDL_Error("SDL_Init failed");
+	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+	{
+		HandleSDL_Error("SDL_Init failed");
+	}
 
 	// Create a window
-	SDL_Window *window = SDL_CreateWindow("Test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, flags);
+	SDL_Window *window = SDL_CreateWindow(
+		"Test",
+		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+		width, height,
+		SDL_WINDOW_VULKAN |
+		SDL_WINDOW_SHOWN |
+		SDL_WINDOW_RESIZABLE);
 	if (!window) HandleSDL_Error("SDL_CreateWindow failed");
 
 	// Get its ID
@@ -43,7 +50,7 @@ int main(int argc, char *argv[])
 		HandleSDL_Error("SDL_Vulkan_CreateSurface failed");
 	}
 
-	// Fill the surface with gray color		DOES NOT WORK
+	// Fill the surface with gray color
 //	SDL_FillRect(screen_surface, NULL, SDL_MapRGB(screen_surface->format, 15, 15, 15));
 
 	// Update the surface
@@ -58,8 +65,8 @@ int main(int argc, char *argv[])
 			switch (event.type)
 			{
 				case SDL_WINDOWEVENT:
-					if (event.window.windowID == windowID)
-					{
+//					if (event.window.windowID == windowID)
+//					{
 						switch (event.window.event)
 						{
 							case SDL_WINDOWEVENT_SIZE_CHANGED:
@@ -71,13 +78,15 @@ int main(int argc, char *argv[])
 								SDL_PushEvent(&event);
 								break;
 						}
-					}
+//					}
 					break;
 				case SDL_QUIT:
 					SDL_Quit();
 					return 0;
 			}
 		}
+//	SDL_RenderClear(renderer);
+//	SDL_RenderPresent(renderer);
 	}
 }
 
