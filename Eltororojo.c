@@ -6,8 +6,8 @@ void HandleSDL_Error(const char *message);
 
 int main(int argc, char *argv[])
 {
-	uint_least16_t width = 640;
-	uint_least16_t height = 480;
+	int width = 640;
+	int height = 480;
 
 	// Initialize SDL
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
@@ -50,6 +50,8 @@ int main(int argc, char *argv[])
 	{
 		HandleSDL_Error("SDL_Vulkan_CreateSurface failed");
 	}
+
+	SDL_Vulkan_GetDrawableSize(window, &width, &height);
 
 	// Keep the window open
 	while (1)
