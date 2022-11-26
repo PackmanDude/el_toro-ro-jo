@@ -2,13 +2,13 @@
 #include <SDL2/SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 
-uint_least16_t width = 640;
-uint_least16_t height = 480;
-
-void HandleSDL_Error(const char *msg);
+void HandleSDL_Error(const char *message);
 
 int main(int argc, char *argv[])
 {
+	uint_least16_t width = 640;
+	uint_least16_t height = 480;
+
 	// Initialize SDL
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 	{
@@ -22,7 +22,8 @@ int main(int argc, char *argv[])
 		width, height,
 		SDL_WINDOW_VULKAN |
 		SDL_WINDOW_SHOWN |
-		SDL_WINDOW_RESIZABLE);
+		SDL_WINDOW_FULLSCREEN
+	);
 	if (!window) HandleSDL_Error("SDL_CreateWindow failed");
 
 	// Get its ID
@@ -44,17 +45,11 @@ int main(int argc, char *argv[])
 		HandleSDL_Error("vkCreateInstance failed");
 	}
 
-	VkSurfaceKHR screen_surface = VK_NULL_HANDLE;
-	if (!SDL_Vulkan_CreateSurface(window, instance, &screen_surface))
+	VkSurfaceKHR surface = VK_NULL_HANDLE;
+	if (!SDL_Vulkan_CreateSurface(window, instance, &surface))
 	{
 		HandleSDL_Error("SDL_Vulkan_CreateSurface failed");
 	}
-
-	// Fill the surface with gray color
-//	SDL_FillRect(screen_surface, NULL, SDL_MapRGB(screen_surface->format, 15, 15, 15));
-
-	// Update the surface
-	SDL_UpdateWindowSurface(window);
 
 	// Keep the window open
 	while (1)
@@ -81,17 +76,17 @@ int main(int argc, char *argv[])
 //					}
 					break;
 				case SDL_QUIT:
+					SDL_DestroyWindow(window);
 					SDL_Quit();
 					return 0;
 			}
 		}
-//	SDL_RenderClear(renderer);
-//	SDL_RenderPresent(renderer);
+	// paste code for renderer here
 	}
 }
 
-void HandleSDL_Error(const char *msg)
+void HandleSDL_Error(const char *message)
 {
-	SDL_Log("%s: %s\n", msg, SDL_GetError());
-	exit(-2);
+	SDL_Log("%s: %s\n", message, SDL_GetError());
+	exit(-1);
 }
