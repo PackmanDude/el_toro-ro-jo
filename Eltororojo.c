@@ -2,57 +2,61 @@
 #include <SDL2/SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 
-void HandleSDL_Error(const char *message);
+void HandleSDL_Error(const char *msg);
 
 int main(int argc, char *argv[])
 {
-	int width = 640;
-	int height = 480;
+	uint_least16_t width = 640;
+	uint_least16_t height = 480;
 
-	// Initialize SDL
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 	{
-		HandleSDL_Error("SDL_Init failed");
+		HandleSDL_Error("SDL_Init() failed");
 	}
 
-	// Create a window
 	SDL_Window *window = SDL_CreateWindow(
-		"Test",
+		"EL_toro-ro-jo",
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		width, height,
-		SDL_WINDOW_VULKAN |
-		SDL_WINDOW_SHOWN |
-		SDL_WINDOW_FULLSCREEN
+		SDL_WINDOW_FULLSCREEN | SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN
 	);
-	if (!window) HandleSDL_Error("SDL_CreateWindow failed");
+	if (!window) HandleSDL_Error("SDL_CreateWindow() failed");
 
-	// Get its ID
-	uint_least32_t windowID = SDL_GetWindowID(window);
-
-	VkInstanceCreateInfo instance_info = { 0 };
-
-	unsigned int count = 0;
-	SDL_Vulkan_GetInstanceExtensions(window, &count, NULL);
-	const char **extensions = malloc(sizeof(char*) * count);
-	SDL_Vulkan_GetInstanceExtensions(window, &count, extensions);
-
-	instance_info.enabledExtensionCount = count;
-	instance_info.ppEnabledExtensionNames = extensions;
-
-	VkInstance instance = VK_NULL_HANDLE;
-	if (vkCreateInstance(&instance_info, NULL, &instance) != VK_SUCCESS)
+	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (!renderer)
 	{
-		HandleSDL_Error("vkCreateInstance failed");
+		SDL_DestroyWindow(window);
+		HandleSDL_Error("SDL_CreateRenderer() failed");
 	}
 
-	VkSurfaceKHR surface = VK_NULL_HANDLE;
-	if (!SDL_Vulkan_CreateSurface(window, instance, &surface))
+	SDL_Surface *surface = SDL_LoadBMP("roma.bmp");
+	if (!surface)
 	{
-		HandleSDL_Error("SDL_Vulkan_CreateSurface failed");
+		SDL_DestroyWindow(window);
+		SDL_DestroyRenderer(renderer);
+		HandleSDL_Error("SDL_LoadBMP() failed");
 	}
 
-	SDL_Vulkan_GetDrawableSize(window, &width, &height);
+	SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+	SDL_FreeSurface(surface);
+	if (!texture)
+	{
+		SDL_DestroyWindow(window);
+		SDL_DestroyRenderer(renderer);
+		HandleSDL_Error("SDL_CreateTextureFromSurface() failed");
+	}
 
+	SDL_RenderClear(renderer);
+	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderPresent(renderer);
+
+	SDL_Delay(2000);
+
+	SDL_DestroyTexture(texture);
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
+	SDL_Quit();
+/*
 	// Keep the window open
 	while (1)
 	{
@@ -85,10 +89,11 @@ int main(int argc, char *argv[])
 		}
 	// paste code for renderer here
 	}
-}
+*/}
 
-void HandleSDL_Error(const char *message)
+void HandleSDL_Error(const char *msg)
 {
-	SDL_Log("%s: %s\n", message, SDL_GetError());
+	SDL_Log("%s: %s\n", msg, SDL_GetError());
+	SDL_Quit();
 	exit(-1);
 }
