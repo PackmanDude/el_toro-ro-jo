@@ -46,50 +46,41 @@ int main(int argc, char *argv[])
 		HandleSDL_Error("SDL_CreateTextureFromSurface() failed");
 	}
 
-	SDL_RenderClear(renderer);
-	SDL_RenderCopy(renderer, texture, NULL, NULL);
-	SDL_RenderPresent(renderer);
-
-	SDL_Delay(2000);
-
-	SDL_DestroyTexture(texture);
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
-	SDL_Quit();
-/*
-	// Keep the window open
+	SDL_Event event;
+	// Main loop
 	while (1)
 	{
-		SDL_Event event;
 		while (SDL_PollEvent(&event))
 		{
 			switch (event.type)
 			{
 				case SDL_WINDOWEVENT:
-//					if (event.window.windowID == windowID)
-//					{
-						switch (event.window.event)
-						{
-							case SDL_WINDOWEVENT_SIZE_CHANGED:
-								width = event.window.data1;
-								height = event.window.data2;
-								break;
-							case SDL_WINDOWEVENT_CLOSE:
-								event.type = SDL_QUIT;
-								SDL_PushEvent(&event);
-								break;
-						}
-//					}
+					switch (event.window.event)
+					{
+						case SDL_WINDOWEVENT_SIZE_CHANGED:
+							width = event.window.data1;
+							height = event.window.data2;
+							break;
+						case SDL_WINDOWEVENT_CLOSE:
+							event.type = SDL_QUIT;
+							SDL_PushEvent(&event);
+							break;
+					}
 					break;
 				case SDL_QUIT:
+					SDL_DestroyTexture(texture);
+					SDL_DestroyRenderer(renderer);
 					SDL_DestroyWindow(window);
 					SDL_Quit();
-					return 0;
+					return EXIT_SUCCESS;
 			}
 		}
-	// paste code for renderer here
+
+		SDL_RenderClear(renderer);
+		SDL_RenderCopy(renderer, texture, NULL, NULL);
+		SDL_RenderPresent(renderer);
 	}
-*/}
+}
 
 void HandleSDL_Error(const char *msg)
 {
