@@ -8,6 +8,7 @@ int main(int argc, char *argv[])
 {
 	uint_least16_t width = 640;
 	uint_least16_t height = 480;
+	int window_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN;
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 	{
@@ -18,7 +19,7 @@ int main(int argc, char *argv[])
 		"EL_toro-ro-jo",
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		width, height,
-		SDL_WINDOW_FULLSCREEN | SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN
+		window_flags
 	);
 	if (!window) HandleSDL_Error("SDL_CreateWindow() failed");
 
