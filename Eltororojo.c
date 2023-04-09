@@ -1,4 +1,4 @@
-#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <SDL2/SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 
@@ -10,10 +10,8 @@ int main(int argc, char *argv[])
 	uint_least16_t height = 480;
 	int window_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN;
 
-	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
-	{
-		HandleSDL_Error("SDL_Init() failed");
-	}
+	if (SDL_Init(SDL_INIT_EVERYTHING)) HandleSDL_Error("SDL_Init() failed");
+	if (!IMG_Init(IMG_INIT_PNG)) HandleSDL_Error("IMG_Init() failed");
 
 	SDL_Window *window = SDL_CreateWindow(
 		"EL_toro-ro-jo",
@@ -30,12 +28,12 @@ int main(int argc, char *argv[])
 		HandleSDL_Error("SDL_CreateRenderer() failed");
 	}
 
-	SDL_Surface *surface = SDL_LoadBMP("roma.bmp");
+	SDL_Surface *surface = IMG_Load("roma.png");
 	if (!surface)
 	{
 		SDL_DestroyWindow(window);
 		SDL_DestroyRenderer(renderer);
-		HandleSDL_Error("SDL_LoadBMP() failed");
+		HandleSDL_Error("IMG_Load() failed");
 	}
 
 	SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
