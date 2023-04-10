@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 		HandleSDL_Error("SDL_CreateRenderer() failed");
 	}
 
-	SDL_Surface *surface = IMG_Load("roma.png");
+	SDL_Surface *surface = IMG_Load("gfx/tiles/roma.png");
 	if (!surface)
 	{
 		SDL_DestroyWindow(window);
