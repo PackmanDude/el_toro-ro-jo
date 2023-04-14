@@ -1,6 +1,5 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_vulkan.h>
-#include <vulkan/vulkan.h>
 
 void HandleSDL_Error(const char *msg);
 
@@ -33,7 +32,7 @@ int main(int argc, char *argv[])
 	{
 		SDL_DestroyWindow(window);
 		SDL_DestroyRenderer(renderer);
-		HandleSDL_Error("IMG_Load() failed");
+		HandleSDL_Error("IMG_Load(gfx/tiles/roma.png) failed");
 	}
 
 	SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);

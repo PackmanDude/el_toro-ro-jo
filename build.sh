@@ -1,7 +1,7 @@
 #!/bin/sh
 
 app=Eltororojo
-libs='-lSDL2 -lSDL2_image -lvulkan'
+libs='-lSDL2 -lSDL2_image'
 if [ "$1" = dev ]; then
 	gcc -Wall -Wextra -Wpedantic -Wformat=2 -Wno-unused-parameter \
 		-Wshadow -Wwrite-strings -Wstrict-prototypes \
