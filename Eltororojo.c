@@ -4,7 +4,6 @@
 #include <vulkan/vulkan.h>
 #include "Eltororojo.h"
 
-// This is a function declaration, btw
 void HandleSDL_Error(const char *msg);
 
 int main(int argc, char *argv[])
