@@ -59,10 +59,8 @@ int main(int argc, char *argv[])
 		vkDestroyInstance(instance, NULL);
 		SDL_DestroyRenderer(renderer);
 		SDL_DestroyWindow(window);
-		HandleSDL_Error("IMG_LoadTexture() failed");
+		HandleSDL_Error("IMG_LoadTexture(gfx/tiles/roma.png) failed");
 	}
-
-//	SDL_Vulkan_GetDrawableSize(window, &width, &height);
 
 	SDL_Event event;
 	// Main loop
