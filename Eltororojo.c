@@ -1,13 +1,16 @@
+#include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_vulkan.h>
 #include <vulkan/vulkan.h>
+#include "Eltororojo.h"
 
+// This is a function declaration, btw
 void HandleSDL_Error(const char *msg);
 
 int main(int argc, char *argv[])
 {
-	int width = 640;
-	int height = 480;
+	uint_least16_t width = 640;
+	uint_least16_t height = 480;
 	int window_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN;
 
 	if (SDL_Init(SDL_INIT_EVERYTHING)) HandleSDL_Error("SDL_Init() failed");
@@ -29,32 +32,37 @@ int main(int argc, char *argv[])
 		HandleSDL_Error("SDL_CreateRenderer() failed");
 	}
 
-	SDL_Texture *texture = IMG_LoadTexture(renderer, "gfx/tiles/roma.png");
-	if (!texture)
-	{
-		SDL_DestroyWindow(window);
-		SDL_DestroyRenderer(renderer);
-		HandleSDL_Error("IMG_LoadTexture() failed");
-	}
-
-/*	VkInstanceCreateInfo instance_info = { VK_NULL_HANDLE };
+	VkInstanceCreateInfo instance_info = { .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
 	SDL_Vulkan_GetInstanceExtensions(window, &instance_info.enabledExtensionCount, NULL);
-	const char **extensions = calloc(instance_info.enabledExtensionCount, sizeof(char*));
-	SDL_Vulkan_GetInstanceExtensions(window, &instance_info.enabledExtensionCount, extensions);
-	instance_info.ppEnabledExtensionNames = extensions;
+	SDL_Vulkan_GetInstanceExtensions(window, &instance_info.enabledExtensionCount, (const char**)instance_info.ppEnabledExtensionNames);
 
 	VkInstance instance = VK_NULL_HANDLE;
 	if (vkCreateInstance(&instance_info, NULL, &instance))
 	{
+		SDL_DestroyRenderer(renderer);
+		SDL_DestroyWindow(window);
 		HandleSDL_Error("vkCreateInstance() failed");
 	}
 
 	VkSurfaceKHR surface = VK_NULL_HANDLE;
 	if (!SDL_Vulkan_CreateSurface(window, instance, &surface))
 	{
+		vkDestroyInstance(instance, NULL);
+		SDL_DestroyRenderer(renderer);
+		SDL_DestroyWindow(window);
 		HandleSDL_Error("SDL_Vulkan_CreateSurface() failed");
 	}
-*/
+
+	SDL_Texture *texture = IMG_LoadTexture(renderer, "gfx/tiles/roma.png");
+	if (!texture)
+	{
+		vkDestroySurfaceKHR(instance, surface, NULL);
+		vkDestroyInstance(instance, NULL);
+		SDL_DestroyRenderer(renderer);
+		SDL_DestroyWindow(window);
+		HandleSDL_Error("IMG_LoadTexture() failed");
+	}
+
 //	SDL_Vulkan_GetDrawableSize(window, &width, &height);
 
 	SDL_Event event;
