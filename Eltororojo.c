@@ -21,20 +21,20 @@ int main(int argc, char *argv[])
 	if (SDL_Init(SDL_INIT_EVERYTHING)) HandleSDL_Error("SDL_Init() failed");
 	if (!IMG_Init(IMG_INIT_PNG)) HandleSDL_Error("IMG_Init() failed");
 
-	VkInstanceCreateInfo layers_info = { VK_NULL_HANDLE }, instance_info =
+	VkInstanceCreateInfo layers_info = { 0 }, instance_info =
 	{
 		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 		&layers_info,
 		.pApplicationInfo = &(VkApplicationInfo)
 		{
 			.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-			.pApplicationName = "El Toro-ro-jo"
+			.pApplicationName = SDL_HINT_APP_NAME
 		}
 	};
 	CheckValidationLayerSupport("VK_LAYER_KHRONOS_validation", &layers_info);
 
 	SDL_Window *window = SDL_CreateWindow(
-		"El Toro-ro-jo",
+		SDL_HINT_APP_NAME,
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		width, height,
 		window_flags
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 	SDL_Vulkan_GetInstanceExtensions(window, &instance_info.enabledExtensionCount, NULL);
 	SDL_Vulkan_GetInstanceExtensions(window, &instance_info.enabledExtensionCount, (const char**)instance_info.ppEnabledExtensionNames);
 
-	VkInstance instance = VK_NULL_HANDLE;
+	VkInstance instance = NULL;
 	VkResult ret;
 	if (ret = vkCreateInstance(&instance_info, NULL, &instance))
 	{
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 		HandleSDL_Error("SDL_CreateRenderer() failed");
 	}
 
-	VkSurfaceKHR surface = VK_NULL_HANDLE;
+	VkSurfaceKHR surface = NULL;
 	if (!SDL_Vulkan_CreateSurface(window, instance, &surface))
 	{
 		SDL_DestroyRenderer(renderer);
@@ -130,7 +130,7 @@ void HandleSDL_Error(const char *msg)
 void CheckValidationLayerSupport(const char *layer_name, VkInstanceCreateInfo *found_layers)
 {
 	uint32_t layers_count = 0;
-	VkLayerProperties available_layers[255] = { VK_NULL_HANDLE };
+	VkLayerProperties available_layers[255] = { 0 };
 
 	vkEnumerateInstanceLayerProperties(&layers_count, NULL);
 	vkEnumerateInstanceLayerProperties(&layers_count, available_layers);
