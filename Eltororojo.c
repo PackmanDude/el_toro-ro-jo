@@ -4,6 +4,11 @@
 #include <vulkan/vulkan.h>
 #include "Eltororojo.h"
 
+#undef SDL_HINT_APP_NAME
+#define SDL_HINT_APP_NAME "El Toro-ro-jo"
+#undef SDL_HINT_VIDEO_EXTERNAL_CONTEXT
+#define SDL_HINT_VIDEO_EXTERNAL_CONTEXT 1
+
 void HandleSDL_Error(const char *msg);
 
 int main(int argc, char *argv[])
@@ -23,31 +28,39 @@ int main(int argc, char *argv[])
 	);
 	if (!window) HandleSDL_Error("SDL_CreateWindow() failed");
 
-	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1,
-		SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	if (!renderer)
+	VkInstanceCreateInfo instance_info =
 	{
-		SDL_DestroyWindow(window);
-		HandleSDL_Error("SDL_CreateRenderer() failed");
-	}
-
-	VkInstanceCreateInfo instance_info = { .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
+		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+		.pApplicationInfo = &(VkApplicationInfo)
+		{
+			.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+			.pApplicationName = "El Toro-ro-jo"
+		}
+	};
 	SDL_Vulkan_GetInstanceExtensions(window, &instance_info.enabledExtensionCount, NULL);
 	SDL_Vulkan_GetInstanceExtensions(window, &instance_info.enabledExtensionCount, (const char**)instance_info.ppEnabledExtensionNames);
 
 	VkInstance instance = VK_NULL_HANDLE;
-	if (vkCreateInstance(&instance_info, NULL, &instance))
+	if (!vkCreateInstance(&instance_info, NULL, &instance))
 	{
-		SDL_DestroyRenderer(renderer);
 		SDL_DestroyWindow(window);
 		HandleSDL_Error("vkCreateInstance() failed");
+	}
+
+	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1,
+		SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (!renderer)
+	{
+		vkDestroyInstance(instance, NULL);
+		SDL_DestroyWindow(window);
+		HandleSDL_Error("SDL_CreateRenderer() failed");
 	}
 
 	VkSurfaceKHR surface = VK_NULL_HANDLE;
 	if (!SDL_Vulkan_CreateSurface(window, instance, &surface))
 	{
-		vkDestroyInstance(instance, NULL);
 		SDL_DestroyRenderer(renderer);
+		vkDestroyInstance(instance, NULL);
 		SDL_DestroyWindow(window);
 		HandleSDL_Error("SDL_Vulkan_CreateSurface() failed");
 	}
@@ -56,8 +69,8 @@ int main(int argc, char *argv[])
 	if (!texture)
 	{
 		vkDestroySurfaceKHR(instance, surface, NULL);
-		vkDestroyInstance(instance, NULL);
 		SDL_DestroyRenderer(renderer);
+		vkDestroyInstance(instance, NULL);
 		SDL_DestroyWindow(window);
 		HandleSDL_Error("IMG_LoadTexture(gfx/tiles/roma.png) failed");
 	}
@@ -85,7 +98,9 @@ int main(int argc, char *argv[])
 					break;
 				case SDL_QUIT:
 					SDL_DestroyTexture(texture);
+					vkDestroySurfaceKHR(instance, surface, NULL);
 					SDL_DestroyRenderer(renderer);
+					vkDestroyInstance(instance, NULL);
 					SDL_DestroyWindow(window);
 					SDL_Quit();
 					return EXIT_SUCCESS;

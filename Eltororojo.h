@@ -1,4 +1,4 @@
-#ifndef EL_HEADERO
-#define EL_HEADERO
+#ifndef EL_TOROROJO_H
+#define EL_TOROROJO_H
 
 #endif
