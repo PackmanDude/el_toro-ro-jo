@@ -10,28 +10,33 @@
 #define SDL_HINT_VIDEO_EXTERNAL_CONTEXT 1
 
 void HandleSDL_Error(const char *msg);
-void CheckValidationLayerSupport(const char *layer_name, VkInstanceCreateInfo *found_layers);
+void CheckValidationLayerSupport(const char *layer_name);
+VkResult ChooseGPU(VkInstance, VkPhysicalDevice *gpu, uint32_t *queue_index);
 
 int main(int argc, char *argv[])
 {
-	uint_least16_t width = 640;
-	uint_least16_t height = 480;
+	uint_least16_t width = 640U;
+	uint_least16_t height = 480U;
 	int window_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN;
 
 	if (SDL_Init(SDL_INIT_EVERYTHING)) HandleSDL_Error("SDL_Init() failed");
 	if (!IMG_Init(IMG_INIT_PNG)) HandleSDL_Error("IMG_Init() failed");
 
-	VkInstanceCreateInfo layers_info = { 0 }, instance_info =
+	const char *layer_names[] = { "VK_LAYER_KHRONOS_validation" };
+	CheckValidationLayerSupport("VK_LAYER_KHRONOS_validation");
+	VkInstanceCreateInfo instance_info =
 	{
-		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-		&layers_info,
+		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 		.pApplicationInfo = &(VkApplicationInfo)
 		{
 			.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 			.pApplicationName = SDL_HINT_APP_NAME
-		}
+		},
+		sizeof(layer_names) / sizeof(layer_names[0]),
+		// You need malloc() (or probably calloc() ) here.
+//		(const char * const*)layer_name
+		layer_names
 	};
-	CheckValidationLayerSupport("VK_LAYER_KHRONOS_validation", &layers_info);
 
 	SDL_Window *window = SDL_CreateWindow(
 		SDL_HINT_APP_NAME,
@@ -42,16 +47,52 @@ int main(int argc, char *argv[])
 	if (!window) HandleSDL_Error("SDL_CreateWindow() failed");
 
 	SDL_Vulkan_GetInstanceExtensions(window, &instance_info.enabledExtensionCount, NULL);
-	SDL_Vulkan_GetInstanceExtensions(window, &instance_info.enabledExtensionCount, (const char**)instance_info.ppEnabledExtensionNames);
+	const char *extensions[instance_info.enabledExtensionCount];
+	SDL_Vulkan_GetInstanceExtensions(window, &instance_info.enabledExtensionCount, extensions);
+	instance_info.ppEnabledExtensionNames = extensions;
 
 	VkInstance instance = NULL;
-	VkResult ret;
-	if (ret = vkCreateInstance(&instance_info, NULL, &instance))
+	VkResult ret = vkCreateInstance(&instance_info, NULL, &instance);
+	if (ret)
 	{
 		SDL_DestroyWindow(window);
 		SDL_SetError("%d", ret);
 		HandleSDL_Error("vkCreateInstance() failed; VkResult is");
 	}
+
+	VkPhysicalDevice gpu = NULL;
+	uint32_t queue_index = 0U;
+	ret = ChooseGPU(instance, &gpu, &queue_index);
+	if (ret || !gpu)
+	{
+		vkDestroyInstance(instance, NULL);
+		SDL_DestroyWindow(window);
+		SDL_SetError("%d", ret);
+		HandleSDL_Error("vkEnumeratePhysicalDevices() failed; VkResult is");
+	}
+
+	VkDevice device = NULL;
+	// WIP
+	VkDeviceCreateInfo device_info =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		.queueCreateInfoCount = 1,
+		&(VkDeviceQueueCreateInfo)
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+			.queueFamilyIndex = queue_index,
+			1,
+			(float[]){ 0.0f }
+		},
+
+	};
+	vkDestroyDevice(device, NULL);
+
+
+
+
+
+
 
 	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1,
 		SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
@@ -62,7 +103,7 @@ int main(int argc, char *argv[])
 		HandleSDL_Error("SDL_CreateRenderer() failed");
 	}
 
-	VkSurfaceKHR surface = NULL;
+	VkSurfaceKHR surface = VK_NULL_HANDLE;
 	if (!SDL_Vulkan_CreateSurface(window, instance, &surface))
 	{
 		SDL_DestroyRenderer(renderer);
@@ -121,29 +162,119 @@ int main(int argc, char *argv[])
 
 void HandleSDL_Error(const char *msg)
 {
-	SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "%s: %s\n", msg, SDL_GetError());
+	SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "%s: %s", msg, SDL_GetError());
 	SDL_Quit();
 	exit(-1);
 }
 
-// TODO: Change integer sizes to more sane ones.
-void CheckValidationLayerSupport(const char *layer_name, VkInstanceCreateInfo *found_layers)
+void CheckValidationLayerSupport(const char *layer_name)
 {
-	uint32_t layers_count = 0;
-	VkLayerProperties available_layers[255] = { 0 };
+	uint32_t layers_count = 0U;
 
 	vkEnumerateInstanceLayerProperties(&layers_count, NULL);
+	VkLayerProperties available_layers[layers_count];
 	vkEnumerateInstanceLayerProperties(&layers_count, available_layers);
-	if (found_layers)
-	{
-		found_layers->enabledLayerCount = layers_count;
-		found_layers->ppEnabledLayerNames = (const char**)available_layers;
-	}
-	for (uint_least8_t i = 0; i < sizeof(available_layers) / sizeof(available_layers[0]); ++i)
+	for (uint32_t i = 0U; i < layers_count; ++i)
 	{
 		if (!strcmp(available_layers[i].layerName, layer_name)) return;
 	}
-	SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "No '%s' layer supported/installed!\n", layer_name);
+	SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "No '%s' layer"
+		" supported/installed!", layer_name);
 	SDL_Quit();
 	exit(-1);
+}
+
+// Not well tested
+VkResult ChooseGPU(VkInstance instance, VkPhysicalDevice *gpu,
+	uint32_t *queue_index)
+{
+	uint32_t gpu_number = 0U;
+
+	uint32_t gpu_total = 0U;
+	vkEnumeratePhysicalDevices(instance, &gpu_total, NULL);
+	VkPhysicalDevice physical_devices[gpu_total];
+	memset(&physical_devices, 0, sizeof(physical_devices));
+	VkPhysicalDeviceProperties device_properties[gpu_total];
+	memset(&device_properties, 0, sizeof(device_properties));
+
+	VkResult ret = vkEnumeratePhysicalDevices(instance,
+		&gpu_total, physical_devices);
+	if (ret) return ret;
+
+	size_t max_device_name_length = 0U;
+	uint32_t graphics_queue_node_index = 0U;
+	for (; gpu_number < gpu_total; ++gpu_number)
+	{
+		*gpu = physical_devices[gpu_number];
+
+		vkGetPhysicalDeviceProperties(*gpu, &device_properties[gpu_number]);
+		size_t current_device_name_length = strlen(device_properties[gpu_number].deviceName);
+		if (current_device_name_length > max_device_name_length)
+		{
+			max_device_name_length = current_device_name_length;
+		}
+
+		uint32_t queue_count = 0U;
+		vkGetPhysicalDeviceQueueFamilyProperties(*gpu, &queue_count, NULL);
+
+		VkQueueFamilyProperties queue_properties[queue_count];
+		memset(&queue_properties, 0, sizeof(queue_properties));
+		vkGetPhysicalDeviceQueueFamilyProperties(*gpu, &queue_count, queue_properties);
+
+//		VkPhysicalDeviceFeatures device_features = { 0 };
+//		vkGetPhysicalDeviceFeatures(*gpu, &device_features);
+
+		graphics_queue_node_index = UINT32_MAX;
+		for (uint32_t i = 0U; i < queue_count; ++i)
+		{
+			if ((queue_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
+				graphics_queue_node_index == UINT32_MAX)
+			{
+				graphics_queue_node_index = i;
+			}
+		}
+		// This GPU supports graphics queue, quit the loop.
+		if (graphics_queue_node_index != UINT32_MAX)
+		{
+			break;
+		}
+	}
+	uint32_t selected_gpu = gpu_number + 1U;
+	// How length is computed: 16 characters for GPU ID (up to 10^15 - 1 GPUs
+	// can be listed) + other characters in the string + GPU name string
+	// length.
+	size_t per_gpu_list_length = (35U + max_device_name_length) * gpu_total;
+	char *per_gpu_list = calloc(per_gpu_list_length, 1);
+	if (!per_gpu_list) perror("calloc() failed");
+
+	for (gpu_number = 0U; gpu_number < gpu_total; ++gpu_number)
+	{
+		snprintf(per_gpu_list + gpu_number * per_gpu_list_length,
+			per_gpu_list_length / gpu_total,
+			"\t%u - %s [%x:%x];", gpu_number + 1U,
+			device_properties[gpu_number].deviceName,
+			device_properties[gpu_number].vendorID,
+			device_properties[gpu_number].deviceID
+		);
+	}
+
+	SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+		"List of available GPUs for rendering: (total %u)\n%s",
+		gpu_total, per_gpu_list
+	);
+	free(per_gpu_list);
+
+	if (graphics_queue_node_index == UINT32_MAX)
+	{
+		SDL_LogCritical(SDL_LOG_CATEGORY_ERROR,
+			"No queue for graphics found! Tried all available GPUs.");
+		*gpu = NULL;
+		return ret;
+	}
+	*queue_index = graphics_queue_node_index;
+	SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+		"Selecting (%u) %s.",
+		selected_gpu, device_properties[selected_gpu - 1].deviceName
+	);
+	return ret;
 }
