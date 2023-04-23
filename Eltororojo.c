@@ -11,7 +11,8 @@
 
 void HandleSDL_Error(const char *msg);
 void CheckValidationLayerSupport(const char *layer_name);
-VkResult ChooseGPU(VkInstance, VkPhysicalDevice *gpu, uint32_t *queue_index);
+VkResult ChooseGPU(VkInstance, VkPhysicalDevice *gpu, uint32_t *queue_index,
+	VkPhysicalDeviceFeatures*);
 
 int main(int argc, char *argv[])
 {
@@ -62,7 +63,8 @@ int main(int argc, char *argv[])
 
 	VkPhysicalDevice gpu = NULL;
 	uint32_t queue_index = 0U;
-	ret = ChooseGPU(instance, &gpu, &queue_index);
+	VkPhysicalDeviceFeatures device_features = { 0 };
+	ret = ChooseGPU(instance, &gpu, &queue_index, &device_features);
 	if (ret || !gpu)
 	{
 		vkDestroyInstance(instance, NULL);
@@ -76,23 +78,20 @@ int main(int argc, char *argv[])
 	VkDeviceCreateInfo device_info =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		.queueCreateInfoCount = 1,
+		.queueCreateInfoCount = 1U,
 		&(VkDeviceQueueCreateInfo)
 		{
 			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
 			.queueFamilyIndex = queue_index,
-			1,
+			1U,
 			(float[]){ 0.0f }
 		},
-
+		.enabledExtensionCount = instance_info.enabledExtensionCount,
+		instance_info.ppEnabledExtensionNames,
+		&device_features
 	};
+	vkCreateDevice(gpu, &device_info, NULL, &device);
 	vkDestroyDevice(device, NULL);
-
-
-
-
-
-
 
 	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1,
 		SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
@@ -186,7 +185,7 @@ void CheckValidationLayerSupport(const char *layer_name)
 
 // Not well tested
 VkResult ChooseGPU(VkInstance instance, VkPhysicalDevice *gpu,
-	uint32_t *queue_index)
+	uint32_t *queue_index, VkPhysicalDeviceFeatures *device_features)
 {
 	uint32_t gpu_number = 0U;
 
@@ -221,8 +220,7 @@ VkResult ChooseGPU(VkInstance instance, VkPhysicalDevice *gpu,
 		memset(&queue_properties, 0, sizeof(queue_properties));
 		vkGetPhysicalDeviceQueueFamilyProperties(*gpu, &queue_count, queue_properties);
 
-//		VkPhysicalDeviceFeatures device_features = { 0 };
-//		vkGetPhysicalDeviceFeatures(*gpu, &device_features);
+		vkGetPhysicalDeviceFeatures(*gpu, device_features);
 
 		graphics_queue_node_index = UINT32_MAX;
 		for (uint32_t i = 0U; i < queue_count; ++i)
