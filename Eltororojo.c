@@ -4,11 +4,6 @@
 #include <vulkan/vulkan.h>
 #include "Eltororojo.h"
 
-#undef SDL_HINT_APP_NAME
-#define SDL_HINT_APP_NAME "El Toro-ro-jo"
-#undef SDL_HINT_VIDEO_EXTERNAL_CONTEXT
-#define SDL_HINT_VIDEO_EXTERNAL_CONTEXT 1
-
 void HandleSDL_Error(const char *msg);
 void CheckValidationLayerSupport(const char *layer_name);
 VkResult ChooseGPU(VkInstance, VkPhysicalDevice *gpu, uint32_t *queue_index,
@@ -16,6 +11,9 @@ VkResult ChooseGPU(VkInstance, VkPhysicalDevice *gpu, uint32_t *queue_index,
 
 int main(int argc, char *argv[])
 {
+	SDL_SetHint("SDL_HINT_APP_NAME", "El Toro-ro-jo");
+	SDL_SetHint("SDL_HINT_VIDEO_EXTERNAL_CONTEXT", "1");
+
 	uint_least16_t width = 640U;
 	uint_least16_t height = 480U;
 	int window_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN;
@@ -31,7 +29,7 @@ int main(int argc, char *argv[])
 		.pApplicationInfo = &(VkApplicationInfo)
 		{
 			.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-			.pApplicationName = SDL_HINT_APP_NAME
+			.pApplicationName = "El Toro-ro-jo"
 		},
 		sizeof(layer_names) / sizeof(layer_names[0]),
 		// You need malloc() (or probably calloc() ) here.
@@ -40,7 +38,7 @@ int main(int argc, char *argv[])
 	};
 
 	SDL_Window *window = SDL_CreateWindow(
-		SDL_HINT_APP_NAME,
+		"El Toro-ro-jo",
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		width, height,
 		window_flags
