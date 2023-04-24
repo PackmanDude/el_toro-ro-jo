@@ -72,7 +72,6 @@ int main(int argc, char *argv[])
 	}
 
 	VkDevice device = NULL;
-	// WIP
 	VkDeviceCreateInfo device_info =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -89,35 +88,30 @@ int main(int argc, char *argv[])
 		&device_features
 	};
 	vkCreateDevice(gpu, &device_info, NULL, &device);
-	vkDestroyDevice(device, NULL);
-
-	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1,
-		SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	if (!renderer)
-	{
-		vkDestroyInstance(instance, NULL);
-		SDL_DestroyWindow(window);
-		HandleSDL_Error("SDL_CreateRenderer() failed");
-	}
 
 	VkSurfaceKHR surface = VK_NULL_HANDLE;
 	if (!SDL_Vulkan_CreateSurface(window, instance, &surface))
 	{
-		SDL_DestroyRenderer(renderer);
+		vkDestroyDevice(device, NULL);
 		vkDestroyInstance(instance, NULL);
 		SDL_DestroyWindow(window);
 		HandleSDL_Error("SDL_Vulkan_CreateSurface() failed");
 	}
 
-	SDL_Texture *texture = IMG_LoadTexture(renderer, "gfx/tiles/roma.png");
+/*	SDL_Texture *texture = IMG_LoadTexture(renderer, "gfx/tiles/roma.png");
 	if (!texture)
 	{
 		vkDestroySurfaceKHR(instance, surface, NULL);
-		SDL_DestroyRenderer(renderer);
+		vkDestroyDevice(device, NULL);
 		vkDestroyInstance(instance, NULL);
 		SDL_DestroyWindow(window);
 		HandleSDL_Error("IMG_LoadTexture(gfx/tiles/roma.png) failed");
 	}
+*/
+
+	/// insert stb_image here
+
+
 
 	SDL_Event event;
 	// Main loop
@@ -141,9 +135,8 @@ int main(int argc, char *argv[])
 					}
 					break;
 				case SDL_QUIT:
-					SDL_DestroyTexture(texture);
 					vkDestroySurfaceKHR(instance, surface, NULL);
-					SDL_DestroyRenderer(renderer);
+					vkDestroyDevice(device, NULL);
 					vkDestroyInstance(instance, NULL);
 					SDL_DestroyWindow(window);
 					SDL_Quit();
@@ -151,9 +144,9 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		SDL_RenderClear(renderer);
-		SDL_RenderCopy(renderer, texture, NULL, NULL);
-		SDL_RenderPresent(renderer);
+//		SDL_RenderClear(renderer);
+//		SDL_RenderCopy(renderer, texture, NULL, NULL);
+//		SDL_RenderPresent(renderer);
 	}
 }
 
